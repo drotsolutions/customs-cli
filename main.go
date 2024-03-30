@@ -37,6 +37,7 @@ var (
 	apiKey     string
 	url        string
 	outputPath string
+	timeout    int
 )
 
 func init() {
@@ -44,6 +45,7 @@ func init() {
 	flag.StringVar(&apiKey, "api-key", "", "")
 	flag.StringVar(&url, "url", defaultURL, "")
 	flag.StringVar(&outputPath, "output", defaultOutput, "")
+	flag.IntVar(&timeout, "timeout", 120, "")
 }
 
 func main() {
@@ -55,8 +57,9 @@ func main() {
 		--api-key	API key used for the authentication and authorization
 		--url		URL of the server (default %q)
 		--output	writer output to the file (default %q)
+		--timeout	how many seconds to wait on processing (default %d)
 		--help		display this help and exit
-`, defaultOutput, defaultURL, defaultOutput)
+`, defaultOutput, defaultURL, defaultOutput, timeout)
 
 		os.Exit(0)
 	}
@@ -93,41 +96,41 @@ func main() {
 	}
 
 	headings := rows[0]
-	iID, err := getMandatoryColumnIndex("id", headings)
+	iID, err := getMandatoryColumnIndex(headings, "id")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	iName, err := getMandatoryColumnIndex("name", headings)
+	iName, err := getMandatoryColumnIndex(headings, "name")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	iDescription, err := getMandatoryColumnIndex("description", headings)
+	iDescription, err := getMandatoryColumnIndex(headings, "description")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	iCustomsTerritories, err := getMandatoryColumnIndex("customsTerritories", headings)
+	iCustomsTerritories, err := getMandatoryColumnIndex(headings, "customsTerritories")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	iCategory := getColumnIndex("category", headings)
-	iSubcategory := getColumnIndex("subcategory", headings)
-	iCountryOfOrigin := getColumnIndex("countryOfOrigin", headings)
-	iGrossMass := getColumnIndex("grossMass", headings)
-	iNetMass := getColumnIndex("netMass", headings)
-	iWeightUnit := getColumnIndex("weightUnit", headings)
-	iModel := getColumnIndex("model", headings)
+	iCategory := getColumnIndex(headings, "category")
+	iSubcategory := getColumnIndex(headings, "subcategory")
+	iCountryOfOrigin := getColumnIndex(headings, "countryOfOrigin")
+	iGrossMass := getColumnIndex(headings, "grossMass")
+	iNetMass := getColumnIndex(headings, "netMass")
+	iWeightUnit := getColumnIndex(headings, "weightUnit")
+	iModel := getColumnIndex(headings, "model")
 
 	// If result columns don't exist we will create them.
-	iActualEU := getColumnIndex("actualEU", headings)
+	iActualEU := getColumnIndex(headings, "actualEU")
 	if iActualEU == nil {
 		headings = append(headings, "actualEU")
-		iActualEU = getColumnIndex("actualEU", headings)
+		iActualEU = getColumnIndex(headings, "actualEU")
 	}
-	iActualNO := getColumnIndex("actualNO", headings)
+	iActualNO := getColumnIndex(headings, "actualNO")
 	if iActualNO == nil {
 		headings = append(headings, "actualNO")
-		iActualNO = getColumnIndex("actualNO", headings)
+		iActualNO = getColumnIndex(headings, "actualNO")
 	}
 
 	// Write headings to the output, because we have modified them by appending the result columns.
@@ -141,28 +144,28 @@ func main() {
 	}
 
 	for i, row := range rows[1:] {
-		id := getString(&iID, row)
-		name := getString(&iName, row)
-		description := getString(&iDescription, row)
-		customsTerritoriesRaw := getString(&iCustomsTerritories, row)
+		id := getString(row, &iID)
+		name := getString(row, &iName)
+		description := getString(row, &iDescription)
+		customsTerritoriesRaw := getString(row, &iCustomsTerritories)
 		customsTerritories, err := prepareCustomsTerritories(customsTerritoriesRaw)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		category := getStringPtr(iCategory, row)
-		subcategory := getStringPtr(iSubcategory, row)
-		countryOfOrigin := getStringPtr(iCountryOfOrigin, row)
-		grossMass, err := getFloatPtr(iGrossMass, row)
+		category := getStringPtr(row, iCategory)
+		subcategory := getStringPtr(row, iSubcategory)
+		countryOfOrigin := getStringPtr(row, iCountryOfOrigin)
+		grossMass, err := getFloatPtr(row, iGrossMass)
 		if err != nil {
 			log.Fatalf("invalid gross mass for item %q\n", id)
 		}
-		netMass, err := getFloatPtr(iNetMass, row)
+		netMass, err := getFloatPtr(row, iNetMass)
 		if err != nil {
 			log.Fatalf("invalid net mass for item %q\n", id)
 		}
-		weightUnit := getStringPtr(iWeightUnit, row)
-		model := getStringPtr(iModel, row)
+		weightUnit := getStringPtr(row, iWeightUnit)
+		model := getStringPtr(row, iModel)
 
 		imp.ImportItems[i] = ImportItemRequest{
 			ID:                 id,
@@ -184,7 +187,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	err = waitForProcessing(url, importLocation, apiKey)
+	err = waitForProcessing(url, importLocation, apiKey, timeout)
 	if err != nil {
 		if errors.Is(err, ErrFailed) {
 			log.Fatalln("error processing import")
@@ -199,7 +202,7 @@ func main() {
 	}
 
 	for _, item := range importResponse.ImportItems {
-		rowIndex, row := getRowByItemID(item.ID, iID, rows)
+		rowIndex, row := getRowByItemID(rows, iID, item.ID)
 		if row == nil {
 			log.Fatalf("error processing import response, row with item id %q is not found\n", item.ID)
 		}
@@ -230,9 +233,9 @@ func main() {
 	fmt.Printf("\n\nDone!\nThe output is written to: %q\n", outputPath)
 }
 
-func getRowByItemID(id string, idIndex int, rows [][]string) (int, []string) {
+func getRowByItemID(rows [][]string, idIndex int, itemID string) (int, []string) {
 	for i, row := range rows {
-		if id == row[idIndex] {
+		if itemID == row[idIndex] {
 			return i, row
 		}
 	}
@@ -240,8 +243,8 @@ func getRowByItemID(id string, idIndex int, rows [][]string) (int, []string) {
 	return 0, nil
 }
 
-func getMandatoryColumnIndex(name string, row []string) (int, error) {
-	index := getColumnIndex(name, row)
+func getMandatoryColumnIndex(row []string, name string) (int, error) {
+	index := getColumnIndex(row, name)
 	if index == nil {
 		return 0, fmt.Errorf(`provided file has no %q column`, name)
 	}
@@ -249,7 +252,7 @@ func getMandatoryColumnIndex(name string, row []string) (int, error) {
 	return *index, nil
 }
 
-func getColumnIndex(name string, row []string) *int {
+func getColumnIndex(row []string, name string) *int {
 	for i, rowName := range row {
 		if strings.EqualFold(name, strings.TrimSpace(rowName)) {
 			return &i
@@ -259,7 +262,7 @@ func getColumnIndex(name string, row []string) *int {
 	return nil
 }
 
-func getString(i *int, row []string) string {
+func getString(row []string, i *int) string {
 	if i == nil {
 		return ""
 	}
@@ -267,7 +270,7 @@ func getString(i *int, row []string) string {
 	return row[*i]
 }
 
-func getStringPtr(i *int, row []string) *string {
+func getStringPtr(row []string, i *int) *string {
 	if i == nil {
 		return nil
 	}
@@ -275,7 +278,7 @@ func getStringPtr(i *int, row []string) *string {
 	return &row[*i]
 }
 
-func getFloatPtr(i *int, row []string) (*float64, error) {
+func getFloatPtr(row []string, i *int) (*float64, error) {
 	if i == nil {
 		return nil, nil
 	}
