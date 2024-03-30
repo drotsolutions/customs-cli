@@ -1,4 +1,8 @@
-# Customs CLI is a tool used for testing of [Drot Solutions'](https://drotsolutions.com/api/v1/docs/index.html) APIs
+# Customs CLI
+
+## What is this?
+
+Customs CLI is a tool used for testing of [Drot Solutions'](https://drotsolutions.com/api/v1/docs/index.html) APIs.
 
 ## Installation
 
