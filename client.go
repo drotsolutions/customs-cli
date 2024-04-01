@@ -149,7 +149,7 @@ func getImportResponse(url, importLocation, apiKey string) (*ImportResponse, err
 
 func waitForProcessing(url, importLocation, apiKey string, timeout int) error {
 	var importStatusResponse ImportStatus
-	fmt.Printf("waiting for the import job ")
+	fmt.Printf("Waiting for the import job ")
 	for i := 0; i < timeout; i++ {
 		fmt.Printf(".")
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s%s/status", url, importLocation), nil)
