@@ -108,30 +108,24 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	iCustomsTerritories, err := getMandatoryColumnIndex(headings, "customsTerritories")
+	iCustomsTerritories, err := getMandatoryColumnIndex(headings, "customs territories")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	iCategory := getColumnIndex(headings, "category")
 	iSubcategory := getColumnIndex(headings, "subcategory")
-	iCountryOfOrigin := getColumnIndex(headings, "countryOfOrigin")
-	iGrossMass := getColumnIndex(headings, "grossMass")
-	iNetMass := getColumnIndex(headings, "netMass")
-	iWeightUnit := getColumnIndex(headings, "weightUnit")
+	iCountryOfOrigin := getColumnIndex(headings, "country of origin")
+	iGrossMass := getColumnIndex(headings, "gross mass")
+	iNetMass := getColumnIndex(headings, "net mass")
+	iWeightUnit := getColumnIndex(headings, "weight unit")
 	iModel := getColumnIndex(headings, "model")
 
-	// If result columns don't exist we will create them.
-	iActualEU := getColumnIndex(headings, "actualEU")
-	if iActualEU == nil {
-		headings = append(headings, "actualEU")
-		iActualEU = getColumnIndex(headings, "actualEU")
-	}
-	iActualNO := getColumnIndex(headings, "actualNO")
-	if iActualNO == nil {
-		headings = append(headings, "actualNO")
-		iActualNO = getColumnIndex(headings, "actualNO")
-	}
+	// Append result columns.
+	iResultEU := len(headings)
+	headings = append(headings, "result EU")
+	iResultNO := len(headings)
+	headings = append(headings, "result NO")
 
 	// Write headings to the output, because we have modified them by appending the result columns.
 	err = file.SetSheetRow("Sheet1", "A1", &headings)
@@ -216,8 +210,8 @@ func main() {
 
 		taricEU := item.getTaricByTerritory(customsTerritoryEU)
 		taricNO := item.getTaricByTerritory(customsTerritoryNO)
-		row[*iActualEU] = taricEU.Code
-		row[*iActualNO] = taricNO.Code
+		row[iResultEU] = taricEU.Code
+		row[iResultNO] = taricNO.Code
 
 		err = file.SetSheetRow("Sheet1", fmt.Sprintf("A%d", rowIndex), &row)
 		if err != nil {
