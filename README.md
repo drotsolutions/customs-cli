@@ -9,11 +9,12 @@ Customs CLI is a tool used for testing of [Drot Solutions'](https://drotsolution
 The only prerequisites for the installation is to have installed Go programming language.
 On a Mac this can be done with `brew install go`, otherwise please follow [Go installation instructions](https://go.dev/doc/install).
 
-Once you have Go installed and you clone this repository, simply run `make` command.
+Once you have Go installed, and you clone this repository, simply run `make` command.
 This will build the binary named `customs` located in the current directory.
 
-If you want to have the binary globally available, consider adding it to the PATH.
-*The examples below assume the binary is globally available, otherwise just replace the `customs` in the examples with `./customs`.
+If you want to have the binary globally available, consider moving it to one of the directories that are in your PATH.
+
+*Note: the examples below assume the binary is globally available, otherwise just replace the `customs` in the examples with `./customs`.*
 
 ## Usage
 

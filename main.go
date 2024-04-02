@@ -56,9 +56,13 @@ func main() {
 	Options:
 		--api-key	API key used for the authentication and authorization
 		--url		URL of the server (default %q)
-		--output	writer output to the file (default %q)
+		--output	write output to the file (default %q).
 		--timeout	how many seconds to wait on processing (default %d)
 		--help		display this help and exit
+
+	Example:
+		customs --api-key "yourApiKey" input-file.xlsx
+
 `, defaultOutput, defaultURL, defaultOutput, timeout)
 
 		os.Exit(0)
