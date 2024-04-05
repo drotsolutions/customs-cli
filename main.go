@@ -45,7 +45,7 @@ func init() {
 	flag.StringVar(&apiKey, "api-key", "", "")
 	flag.StringVar(&url, "url", defaultURL, "")
 	flag.StringVar(&outputPath, "output", defaultOutput, "")
-	flag.IntVar(&timeout, "timeout", 120, "")
+	flag.IntVar(&timeout, "timeout", 600, "")
 }
 
 func main() {
@@ -184,11 +184,15 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	fmt.Printf("The import has been sent for processing (import URL: %s%s)\n", url, importLocation)
 
 	err = waitForProcessing(url, importLocation, apiKey, timeout)
 	if err != nil {
 		if errors.Is(err, ErrFailed) {
-			log.Fatalln("error processing import")
+			// If the categorization failed, write the error to the Excel file to help with troubleshooting.
+			fmt.Printf("\nOne or more errors occurred during catetgorization. The error(s) will be written to the output file.\n")
+		} else if errors.Is(err, ErrNotProcessed) {
+			fmt.Printf("\nOne or more items are not processed. More details will be written to the output file.\n")
 		} else {
 			log.Fatalln(err)
 		}
@@ -202,7 +206,7 @@ func main() {
 	for _, item := range importResponse.ImportItems {
 		rowIndex, row := getRowByItemID(rows, iID, item.ID)
 		if row == nil {
-			log.Fatalf("error processing import response, row with item id %q is not found\n", item.ID)
+			log.Fatalf("Error processing import response, row with item id %q is not found\n", item.ID)
 		}
 		// Excel is 1 indexed. The first data row is 2 (the heading is 1).
 		rowIndex++
@@ -212,10 +216,25 @@ func main() {
 			row = append(row, "")
 		}
 
-		taricEU := item.getTaricByTerritory(customsTerritoryEU)
-		taricNO := item.getTaricByTerritory(customsTerritoryNO)
-		row[iResultEU] = taricEU.Code
-		row[iResultNO] = taricNO.Code
+		switch item.Status {
+		case ImportItemStatusProcessed:
+			// This is the happy case, everything is processed.
+			taricEU := item.getTaricByTerritory(customsTerritoryEU)
+			taricNO := item.getTaricByTerritory(customsTerritoryNO)
+			row[iResultEU] = taricEU.Code
+			row[iResultNO] = taricNO.Code
+		case ImportItemStatusProcessing:
+			row[iResultEU] = "Processing didn't finish in time, consider increasing the processing time with --timeout flag"
+		case ImportItemStatusPending:
+			row[iResultEU] = "Processing not started, consider increasing the processing time with --timeout flag. If this error persists, it indicates the server issue, please contact the support."
+		case ImportItemStatusFailed:
+			// In the case of error, write the error message.
+			if item.Error != nil {
+				row[iResultEU] = fmt.Sprintf("Error processing item: %q", *item.Error)
+			} else {
+				row[iResultEU] = "Error processing item. If this error persists, it indicates the server issue, please contact the support."
+			}
+		}
 
 		err = file.SetSheetRow("Sheet1", fmt.Sprintf("A%d", rowIndex), &row)
 		if err != nil {

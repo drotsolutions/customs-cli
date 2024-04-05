@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -90,7 +91,7 @@ func sendImportRequest(request ImportRequest, url, apiKey string) (string, error
 	if err != nil {
 		return "", err
 	}
-	req.Header.Add("Authorization", "Bearer "+apiKey)
+	req.Header.Add("Authorization", prepareApiKey(apiKey))
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
@@ -114,7 +115,7 @@ func getImportResponse(url, importLocation, apiKey string) (*ImportResponse, err
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Authorization", "Bearer "+apiKey)
+	req.Header.Add("Authorization", prepareApiKey(apiKey))
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -157,7 +158,7 @@ func waitForProcessing(url, importLocation, apiKey string, timeout int) error {
 			return err
 		}
 
-		req.Header.Add("Authorization", "Bearer "+apiKey)
+		req.Header.Add("Authorization", prepareApiKey(apiKey))
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err
@@ -187,7 +188,9 @@ func waitForProcessing(url, importLocation, apiKey string, timeout int) error {
 		time.Sleep(time.Second)
 	}
 
-	fmt.Printf("\n%v\n", importStatusResponse)
-
 	return ErrNotProcessed
+}
+
+func prepareApiKey(apiKey string) string {
+	return "Bearer " + strings.TrimPrefix(apiKey, "Bearer ")
 }
