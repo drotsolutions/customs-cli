@@ -47,26 +47,26 @@ type ImportResponse struct {
 }
 
 type ImportItemResponse struct {
-	ID                 string                 `json:"id"`
-	Name               string                 `json:"name"`
-	Description        string                 `json:"description"`
-	Category           *string                `json:"category,omitempty"`
-	Subcategory        *string                `json:"subcategory,omitempty"`
-	CountryOfOrigin    *string                `json:"countryOfOrigin,omitempty"`
-	GrossMass          *float64               `json:"grossMass,omitempty"`
-	NetMass            *float64               `json:"netMass,omitempty"`
-	WeightUnit         *string                `json:"weightUnit,omitempty"`
-	CustomsTerritories []string               `json:"customsTerritories"`
-	Tarics             []CustomsCodesResponse `json:"customsCodes"`
-	Status             string                 `json:"status"`
-	Error              *string                `json:"error,omitempty"`
-	Attempts           int                    `json:"attempts"`
-	MaxAttempts        int                    `json:"maxAttempts"`
-	CreatedAt          time.Time              `json:"createdAt"`
-	UpdatedAt          time.Time              `json:"updatedAt"`
+	ID                 string                   `json:"id"`
+	Name               string                   `json:"name"`
+	Description        string                   `json:"description"`
+	Category           *string                  `json:"category,omitempty"`
+	Subcategory        *string                  `json:"subcategory,omitempty"`
+	CountryOfOrigin    *string                  `json:"countryOfOrigin,omitempty"`
+	GrossMass          *float64                 `json:"grossMass,omitempty"`
+	NetMass            *float64                 `json:"netMass,omitempty"`
+	WeightUnit         *string                  `json:"weightUnit,omitempty"`
+	CustomsTerritories []string                 `json:"customsTerritories"`
+	Tarics             []CommodityCodesResponse `json:"commodityCodes"`
+	Status             string                   `json:"status"`
+	Error              *string                  `json:"error,omitempty"`
+	Attempts           int                      `json:"attempts"`
+	MaxAttempts        int                      `json:"maxAttempts"`
+	CreatedAt          time.Time                `json:"createdAt"`
+	UpdatedAt          time.Time                `json:"updatedAt"`
 }
 
-func (i ImportItemResponse) getTaricByTerritory(territory string) *CustomsCodesResponse {
+func (i ImportItemResponse) getTaricByTerritory(territory string) *CommodityCodesResponse {
 	for _, taric := range i.Tarics {
 		if taric.CustomsTerritory == territory {
 			return &taric
@@ -76,7 +76,7 @@ func (i ImportItemResponse) getTaricByTerritory(territory string) *CustomsCodesR
 	return nil
 }
 
-type CustomsCodesResponse struct {
+type CommodityCodesResponse struct {
 	CustomsTerritory string `json:"customsTerritory"`
 	Code             string `json:"code"`
 }
@@ -150,7 +150,7 @@ func getImportResponse(url, importLocation, apiKey string) (*ImportResponse, err
 
 func waitForProcessing(url, importLocation, apiKey string, timeout int) error {
 	var importStatusResponse ImportStatus
-	fmt.Printf("Waiting for the import job ")
+	fmt.Printf("Waiting for the import job")
 	for i := 0; i < timeout; i++ {
 		fmt.Printf(".")
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s%s/status", url, importLocation), nil)

@@ -18,11 +18,11 @@ If you want to have the binary globally available, consider moving it to one of 
 
 ## Usage
 
-The main purpose of this program is to take data from a local Excel file, upload it to the customs service that will generate customs codes,
-and write the generated customs codes to a local file.
+The main purpose of this program is to take data from a local Excel file, upload it to the customs service that will generate commodity codes,
+and write the generated codes to a local file.
 
 The command expects the Excel file to have specific columns. Please check `examples/sample.xlsx` file for details.
-The output file will have the same content as the input file, except it will contain additional columns with the generated customs codes.
+The output file will have the same content as the input file, except it will contain additional columns with the generated commodity codes.
 
 Usage example:
 ```
