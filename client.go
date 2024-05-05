@@ -22,17 +22,26 @@ type ImportRequest struct {
 }
 
 type ImportItemRequest struct {
-	ID                 string   `json:"id"`
-	Name               string   `json:"name"`
-	Description        string   `json:"description"`
+	ID              string          `json:"id"`
+	Name            string          `json:"name"`
+	Description     string          `json:"description"`
+	Category        *string         `json:"category,omitempty"`
+	Subcategory     *string         `json:"subcategory,omitempty"`
+	CountryOfOrigin *string         `json:"countryOfOrigin,omitempty"`
+	GrossMass       *float64        `json:"grossMass,omitempty"`
+	NetMass         *float64        `json:"netMass,omitempty"`
+	WeightUnit      *string         `json:"weightUnit,omitempty"`
+	Actions         []ActionRequest `json:"actions"` // actions to perform on the item
+}
+
+type ActionRequest struct {
+	Name       string     `json:"name"`
+	Parameters Parameters `json:"parameters"`
+}
+
+type Parameters struct {
 	CustomsTerritories []string `json:"customsTerritories"`
-	Category           *string  `json:"category,omitempty"`
-	Subcategory        *string  `json:"subcategory,omitempty"`
-	CountryOfOrigin    *string  `json:"countryOfOrigin,omitempty"`
-	GrossMass          *float64 `json:"grossMass,omitempty"`
-	NetMass            *float64 `json:"netMass,omitempty"`
-	WeightUnit         *string  `json:"weightUnit,omitempty"`
-	Model              *string  `json:"model,omitempty"`
+	Model              *string  `json:"model,omitempty"` // Model is a non-documented internal property, don't use it.
 }
 
 type ImportStatus struct {
@@ -47,23 +56,19 @@ type ImportResponse struct {
 }
 
 type ImportItemResponse struct {
-	ID                 string                   `json:"id"`
-	Name               string                   `json:"name"`
-	Description        string                   `json:"description"`
-	Category           *string                  `json:"category,omitempty"`
-	Subcategory        *string                  `json:"subcategory,omitempty"`
-	CountryOfOrigin    *string                  `json:"countryOfOrigin,omitempty"`
-	GrossMass          *float64                 `json:"grossMass,omitempty"`
-	NetMass            *float64                 `json:"netMass,omitempty"`
-	WeightUnit         *string                  `json:"weightUnit,omitempty"`
-	CustomsTerritories []string                 `json:"customsTerritories"`
-	Tarics             []CommodityCodesResponse `json:"commodityCodes"`
-	Status             string                   `json:"status"`
-	Error              *string                  `json:"error,omitempty"`
-	Attempts           int                      `json:"attempts"`
-	MaxAttempts        int                      `json:"maxAttempts"`
-	CreatedAt          time.Time                `json:"createdAt"`
-	UpdatedAt          time.Time                `json:"updatedAt"`
+	ID              string                   `json:"id"`
+	Name            string                   `json:"name"`
+	Description     string                   `json:"description"`
+	Category        *string                  `json:"category,omitempty"`
+	Subcategory     *string                  `json:"subcategory,omitempty"`
+	CountryOfOrigin *string                  `json:"countryOfOrigin,omitempty"`
+	GrossMass       *float64                 `json:"grossMass,omitempty"`
+	NetMass         *float64                 `json:"netMass,omitempty"`
+	WeightUnit      *string                  `json:"weightUnit,omitempty"`
+	Actions         []ActionResponse         `json:"actions,omitempty"`
+	Tarics          []CommodityCodesResponse `json:"commodityCodes"`
+	CreatedAt       time.Time                `json:"createdAt"`
+	UpdatedAt       time.Time                `json:"updatedAt"`
 }
 
 func (i ImportItemResponse) getTaricByTerritory(territory string) *CommodityCodesResponse {
@@ -74,6 +79,25 @@ func (i ImportItemResponse) getTaricByTerritory(territory string) *CommodityCode
 	}
 
 	return nil
+}
+
+func (i ImportItemResponse) getAction(name string) *ActionResponse {
+	for _, action := range i.Actions {
+		if action.Name == name {
+			return &action
+		}
+	}
+
+	return nil
+}
+
+type ActionResponse struct {
+	Name        string         `json:"name"`
+	Parameters  map[string]any `json:"parameters"`
+	Status      string         `json:"status"`
+	Error       *string        `json:"error,omitempty"`
+	Attempts    int            `json:"attempts"`
+	MaxAttempts int            `json:"maxAttempts"`
 }
 
 type CommodityCodesResponse struct {

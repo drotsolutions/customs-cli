@@ -23,6 +23,10 @@ const (
 	customsTerritoryNO = "no"
 )
 
+const (
+	actionDetermineCommodityCodes = "determineCommodityCodes"
+)
+
 var (
 	allowedCustomsTerritories = []string{customsTerritoryEU, customsTerritoryNO}
 )
@@ -166,17 +170,24 @@ func main() {
 		model := getStringPtr(row, iModel)
 
 		imp.ImportItems[i] = ImportItemRequest{
-			ID:                 id,
-			Name:               name,
-			Description:        description,
-			Category:           category,
-			Subcategory:        subcategory,
-			CountryOfOrigin:    countryOfOrigin,
-			GrossMass:          grossMass,
-			NetMass:            netMass,
-			WeightUnit:         weightUnit,
-			CustomsTerritories: customsTerritories,
-			Model:              model,
+			ID:              id,
+			Name:            name,
+			Description:     description,
+			Category:        category,
+			Subcategory:     subcategory,
+			CountryOfOrigin: countryOfOrigin,
+			GrossMass:       grossMass,
+			NetMass:         netMass,
+			WeightUnit:      weightUnit,
+			Actions: []ActionRequest{
+				{
+					Name: actionDetermineCommodityCodes,
+					Parameters: Parameters{
+						CustomsTerritories: customsTerritories,
+						Model:              model,
+					},
+				},
+			},
 		}
 	}
 
@@ -216,7 +227,11 @@ func main() {
 			row = append(row, "")
 		}
 
-		switch item.Status {
+		action := item.getAction(actionDetermineCommodityCodes)
+		if action == nil {
+			log.Fatalf("Error processing import response, row with item id %q has no action %q\n", item.ID, actionDetermineCommodityCodes)
+		}
+		switch action.Status {
 		case ImportItemStatusProcessed:
 			// This is the happy case, everything is processed.
 			taricEU := item.getTaricByTerritory(customsTerritoryEU)
@@ -229,11 +244,13 @@ func main() {
 			row[iResultEU] = "Processing not started, consider increasing the processing time with --timeout flag. If this error persists, it indicates the server issue, please contact the support."
 		case ImportItemStatusFailed:
 			// In the case of error, write the error message.
-			if item.Error != nil {
-				row[iResultEU] = fmt.Sprintf("Error processing item: %q", *item.Error)
+			if action.Error != nil {
+				row[iResultEU] = fmt.Sprintf("Error processing item: %q", *action.Error)
 			} else {
 				row[iResultEU] = "Error processing item. If this error persists, it indicates the server issue, please contact the support."
 			}
+		default:
+			log.Fatalf("Received unexpected action status %q\n", action.Status)
 		}
 
 		err = file.SetSheetRow("Sheet1", fmt.Sprintf("A%d", rowIndex), &row)
