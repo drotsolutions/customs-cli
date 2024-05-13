@@ -92,12 +92,12 @@ func (i ImportItemResponse) getAction(name string) *ActionResponse {
 }
 
 type ActionResponse struct {
-	Name        string         `json:"name"`
-	Parameters  map[string]any `json:"parameters"`
-	Status      string         `json:"status"`
-	Error       *string        `json:"error,omitempty"`
-	Attempts    int            `json:"attempts"`
-	MaxAttempts int            `json:"maxAttempts"`
+	Name        string     `json:"name"`
+	Parameters  Parameters `json:"parameters"`
+	Status      string     `json:"status"`
+	Error       *string    `json:"error,omitempty"`
+	Attempts    int        `json:"attempts"`
+	MaxAttempts int        `json:"maxAttempts"`
 }
 
 type CommodityCodesResponse struct {
